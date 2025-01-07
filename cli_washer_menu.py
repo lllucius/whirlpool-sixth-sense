@@ -2,10 +2,10 @@ import aioconsole
 import json
 
 
-from whirlpool.washerdryer import WasherDryer
+from whirlpool.washer import Washer
 
 
-async def show_washerdryer_menu(wd: WasherDryer, manager: "ApplicationsManager"):
+async def show_washer_menu(w: Washer, manager: "ApplicationsManager"):
     def print_menu():
         print("\n")
         print(30 * "-", "MENU", 30 * "-")
@@ -16,20 +16,20 @@ async def show_washerdryer_menu(wd: WasherDryer, manager: "ApplicationsManager")
         print("q. Exit")
         print(67 * "-")
 
-    def print_status(wd: WasherDryer):
-        print("online: " + str(wd.get_online()))
-        print("state: " + str(wd.get_machine_state()))
-        print("sensing: " + str(wd.get_cycle_status_sensing()))
-        print("filling: " + str(wd.get_cycle_status_filling()))
-        print("soaking: " + str(wd.get_cycle_status_soaking()))
-        print("washing: " + str(wd.get_cycle_status_washing()))
-        print("rinsing: " + str(wd.get_cycle_status_rinsing()))
-        print("spinning: " + str(wd.get_cycle_status_spinning()))
+    def print_status(w: Washer):
+        print("online: " + str(w.get_online()))
+        print("state: " + str(w.get_machine_state()))
+        print("sensing: " + str(w.get_cycle_status_sensing()))
+        print("filling: " + str(w.get_cycle_status_filling()))
+        print("soaking: " + str(w.get_cycle_status_soaking()))
+        print("washing: " + str(w.get_cycle_status_washing()))
+        print("rinsing: " + str(w.get_cycle_status_rinsing()))
+        print("spinning: " + str(w.get_cycle_status_spinning()))
 
     def attr_upd():
         print("Attributes updated")
 
-    wd.register_attr_callback(attr_upd)
+    w.register_attr_callback(attr_upd)
 
     await manager.connect()
 
@@ -39,16 +39,16 @@ async def show_washerdryer_menu(wd: WasherDryer, manager: "ApplicationsManager")
         choice = await aioconsole.ainput("Enter your choice: ")
 
         if choice == "p":
-            print_status(wd)
+            print_status(w)
         elif choice == "u":
-            await wd.fetch_data()
-            print_status(wd)
+            await w.fetch_data()
+            print_status(w)
         elif choice == "v":
-            print(json.dumps(wd.data, indent=4, sort_keys=True, default=str))
+            print(json.dumps(w.data, indent=4, sort_keys=True, default=str))
         elif choice == "c":
             cmd = aioconsole.ainput("Command: ")
             val = aioconsole.ainput("Value: ")
-            await wd.set_value(cmd, val)
+            await w.set_value(cmd, val)
         elif choice == "q":
             print("Bye")
             loop = False

@@ -5,11 +5,14 @@ import logging
 import aiohttp
 
 from cli_ac_menu import show_aircon_menu
+from cli_dryer_menu import show_dryer_menu
 from cli_oven_menu import show_oven_menu
+from cli_washer_menu import show_washer_menu
 from cli_washerdryer_menu import show_washerdryer_menu
 from whirlpool.appliancesmanager import AppliancesManager
 from whirlpool.auth import Auth
-from whirlpool.backendselector import BackendSelector, Brand, Region
+from whirlpool.backendselector import BackendSelector
+from whirlpool.types import ApplianceKind, Brand, Region
 
 logging.basicConfig(format="%(asctime)s [%(name)s %(levelname)s]: %(message)s")
 logger = logging.getLogger("whirlpool")
@@ -57,35 +60,34 @@ async def start():
     async with aiohttp.ClientSession() as session:
         auth = Auth(backend_selector, args.email, args.password, session)
         await auth.do_auth(store=False)
-        appliance_manager = AppliancesManager(backend_selector, auth, session)
-        if not await appliance_manager.fetch_appliances():
+        manager = AppliancesManager(backend_selector, auth, session)
+        if not await manager.fetch_appliances():
             logger.error("Could not fetch appliances")
             return
 
         if args.list:
-            print(appliance_manager.aircons)
-            print(appliance_manager.washer_dryers)
-            print(appliance_manager.ovens)
+            print([app._appliance_data for app in manager.get_appliances()])
             return
 
         if not args.said:
             logger.error("No appliance specified")
             return
 
-        for ac_data in appliance_manager.aircons:
-            if ac_data["SAID"] == args.said:
-                await show_aircon_menu(backend_selector, auth, args.said, session)
-                return
+        app = manager.get_appliance(args.said)
+        if not app:
+            logger.error(f"{said} wasn't found");
+            return
 
-        for wd_data in appliance_manager.washer_dryers:
-            if wd_data["SAID"] == args.said:
-                await show_washerdryer_menu(backend_selector, auth, args.said, session)
-                return
-
-        for mo_data in appliance_manager.ovens:
-            if mo_data["SAID"] == args.said:
-                await show_oven_menu(backend_selector, auth, args.said, session)
-                return
-
+        match app.Kind:
+            case ApplianceKind.AirCon:
+                await show_aircon_menu(app, manager)
+            case ApplianceKind.Dryer:
+                await show_dryer_menu(app, manager)
+            case ApplianceKind.Oven:
+                await show_oven_menu(app, manager)
+            case ApplianceKind.Washer:
+                await show_washer_menu(app, manager)
+            case ApplianceKind.WasherDryer:
+                await show_washerdryer_menu(app, manager)
 
 asyncio.run(start())

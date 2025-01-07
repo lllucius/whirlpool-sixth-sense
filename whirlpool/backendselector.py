@@ -1,11 +1,15 @@
 import logging
 
-from .types import Brand, Region
+from .types import Brand, CredentialsDict, Region
 
 LOGGER = logging.getLogger(__name__)
 
-CREDENTIALS: dict[Brand, list[dict[str, str]]] = {
+CREDENTIALS: dict[Brand, list[CredentialsDict]] = {
     Brand.Whirlpool: [
+        {
+            "client_id": "whirlpool_android_v1",
+            "client_secret": "yH5BcCm4ogWBoyD_NrlE04vmVps2s8T7KaIi4PYrc_fsdphWpG1IwlLSJ-yl7FGV",
+        },
         {
             "client_id": "whirlpool_android",
             "client_secret": "i-eQ8MD4jK4-9DUCbktfg-t_7gvU-SrRstPRGAYnfBPSrHHt5Mc0MFmYymU2E2qzif5cMaBYwFyFgSU6NTWjZg",
@@ -17,15 +21,23 @@ CREDENTIALS: dict[Brand, list[dict[str, str]]] = {
     ],
     Brand.Maytag: [
         {
+            "client_id": "maytag_android_v1",
+            "client_secret": "f1XfYji_D9KfZGovyp8PMgRzrFKjhjY26TV0hu3Mt1-tCCNPl9s95z7QLUfB9UgB",
+        },
+        {
             "client_id": "maytag_ios",
             "client_secret": "OfTy3A3rV4BHuhujkPThVDE9-SFgOymJyUrSbixjViATjCGviXucSKq2OxmPWm8DDj9D1IFno_mZezTYduP-Ig",
-        }
+        },
     ],
     Brand.KitchenAid: [
         {
+            "client_id": "kitchenaid_android_v1",
+            "client_secret": "T5j9T4ZAMnC6EMVpPAwZyKsRykXGfKOMDqikPHYpCKEMYjssPtJtuJtMYEc30g56",
+        },
+        {
             "client_id": "Kitchenaid_iOS",
             "client_secret": "kkdPquOHfNH-iIinccTdhAkJmaIdWBhLehhLrfoXRWbKjEpqpdu92PISF_yJEWQs72D2yeC0PdoEKeWgHR9JRA",
-        }
+        },
     ],
 }
 
@@ -43,43 +55,49 @@ class BackendSelector:
         self._region = region
 
     @property
-    def brand(self) -> Brand:
+    def brand(self):
         return self._brand
 
     @property
-    def region(self) -> Region:
+    def region(self):
         return self._region
 
     @property
-    def base_url(self) -> str:
+    def base_url(self):
         return URLS[self._region]
 
     @property
-    def client_credentials(self) -> list[dict[str, str]]:
+    def client_credentials(self) -> list[CredentialsDict]:
         return CREDENTIALS[self._brand]
 
     @property
-    def appliance_command_url(self) -> str:
-        return f"{self.base_url}/api/v1/appliance/command"
-
-    @property
-    def oauth_token_url(self) -> str:
+    def auth_url(self):
         return f"{self.base_url}/oauth/token"
 
     @property
-    def websocket_url(self) -> str:
+    def ws_url(self):
         return f"{self.base_url}/api/v1/client_auth/webSocketUrl"
 
     @property
-    def user_details_url(self) -> str:
+    def post_appliance_command_url(self):
+        return f"{self.base_url}/api/v1/appliance/command"
+
+    @property
+    def get_appliance_data_url(self):
+        return f"{self.base_url}/api/v1/appliance"
+
+    @property
+    def get_user_data_url(self):
         return f"{self.base_url}/api/v1/getUserDetails"
 
     @property
-    def shared_appliances_url(self) -> str:
+    def get_shared_appliances_url(self):
         return f"{self.base_url}/api/v1/share-accounts/appliances"
 
-    def get_appliance_data_url(self, said: str) -> str:
-        return f"{self.base_url}/api/v1/appliance/{said}"
+    @property
+    def get_owned_appliances_url(self):
+        return f"{self.base_url}/api/v2/appliance/all/account"
 
-    def get_owned_appliances_url(self, account_id: str) -> str:
-        return f"{self.base_url}/api/v2/appliance/all/account/{account_id}"
+    @property
+    def get_data_model_url(self):
+        return f"{self.base_url}/api/v2/DeviceDataModel"

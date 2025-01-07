@@ -6,7 +6,7 @@ from typing import Any
 import aiohttp
 import async_timeout
 
-from .backendselector import BackendSelector
+from .backendselector import BackendSelector, CredentialsDict
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,14 +27,14 @@ class Auth:
         self._auth_dict: dict[str, Any] = {}
         self._session: aiohttp.ClientSession = session
 
-        self._renew_time: datetime | None = None
+        self._renew_time: datetime = None
 
     def _save_auth_data(self):
         with open(AUTH_JSON_FILE, "w") as f:
             json.dump(self._auth_dict, f)
 
     def _get_auth_body(
-        self, refresh_token: str, client_creds: dict[str, str]
+        self, refresh_token: str, client_creds: CredentialsDict
     ) -> dict[str, str]:
         if refresh_token:
             LOGGER.info("Using refresh token in auth body")
@@ -48,12 +48,12 @@ class Auth:
                 "password": self._password,
             }
 
-        auth_data.update(client_creds)
+        auth_data.update(client_creds)  # type: ignore
 
         return auth_data
 
-    async def _do_auth(self, refresh_token: str | None) -> dict[str, str]:
-        auth_url = self._backend_selector.oauth_token_url
+    async def _do_auth(self, refresh_token: str) -> dict[str, str | float] | None:
+        auth_url = self._backend_selector.auth_url
         auth_header = {
             "Content-Type": "application/x-www-form-urlencoded",
             "User-Agent": "okhttp/3.12.0",
@@ -89,7 +89,7 @@ class Auth:
             "refresh_token": fetched_auth_data.get("refresh_token", ""),
             "expire_date": curr_timestamp + fetched_auth_data.get("expires_in", 0),
             "accountId": fetched_auth_data.get("accountId", ""),
-            "SAID": fetched_auth_data.get("SAID", ""),
+            "SAID": fetched_auth_data.get("SAID", []),
         }
         if store:
             self._save_auth_data()
@@ -97,7 +97,7 @@ class Auth:
 
     async def load_auth_file(self):
         try:
-            with open(AUTH_JSON_FILE) as f:
+            with open(AUTH_JSON_FILE, "r") as f:
                 LOGGER.info("Loading auth from file")
                 self._auth_dict = json.load(f)
         except FileNotFoundError:
@@ -107,39 +107,18 @@ class Auth:
             LOGGER.info("Access token expired. Renewing.")
             await self.do_auth()
 
-    def is_access_token_valid(self):
+    def is_access_token_valid(self) -> bool:
         return (
             "access_token" in self._auth_dict
             and self._auth_dict.get("expire_date", 0) > datetime.now().timestamp()
         )
 
-    def get_access_token(self):
+    def get_access_token(self) -> str | None:
         return self._auth_dict.get("access_token", None)
 
-    async def get_account_id(self) -> str | None:
-        """Returns the accountId value from the `_auth_dict` if it exists,
-        otherwise fetches it from the backend and returns it.
-        """
-        if self._auth_dict.get("accountId"):
-            return self._auth_dict.get("accountId")
+    def get_account_id(self) -> str | None:
+        """Returns the accountId value from the `_auth_dict`, or None if not present."""
+        return self._auth_dict.get("accountId", None)
 
-        headers = {
-            "Authorization": f"Bearer {self.get_access_token()}",
-            "Content-Type": "application/json",
-            "User-Agent": "okhttp/3.12.0",
-            "Pragma": "no-cache",
-            "Cache-Control": "no-cache",
-        }
-
-        async with self._session.get(
-            self._backend_selector.user_details_url, headers=headers
-        ) as r:
-            if r.status != 200:
-                LOGGER.error(f"Failed to get account id: {r.status}")
-                return None
-            data = await r.json()
-            self._auth_dict["accountId"] = data["accountId"]
-            return self._auth_dict["accountId"]
-
-    def get_said_list(self):
+    def get_said_list(self) -> list[str]:
         return self._auth_dict.get("SAID", None)

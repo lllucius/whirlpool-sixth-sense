@@ -80,13 +80,12 @@ MACHINE_STATE_MAP = {
 }
 
 
-class WasherDryer(Appliance):
-    Kind = ApplianceKind.WasherDryer
-    Model = "WFC8090GX"
+class Washer(Appliance):
+    Kind = ApplianceKind.Washer
 
     @staticmethod
     def wants(appliance_data: ApplianceData):
-        return appliance_data.model_number == WasherDryer.Model
+        return appliance_data.model_number == Washer.Model
 
     def get_machine_state(self):
         state_raw = self.get_value(ATTR_MACHINE_STATE)
