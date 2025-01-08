@@ -205,8 +205,6 @@ class AppliancesManager:
             LOGGER.error("Session not started")
             return False
 
-        print("SEND ATTR", attributes)
-
         LOGGER.info(f"Sending attributes: {attributes}")
 
         cmd_data = {

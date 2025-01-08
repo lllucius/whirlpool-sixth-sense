@@ -161,8 +161,6 @@ class Appliance:
         return self._data_dict["attributes"][attribute]["value"]
 
     def _set_attribute(self, attribute: str, value: str, timestamp: int):
-        print("SETTING", attribute, "VALUE", value, "TIME", timestamp)
-
         if self.has_attribute(attribute):
             LOGGER.debug(f"Updating attribute {attribute} with {value} ({timestamp})")
             self._data_dict["attributes"][attribute]["value"] = value
